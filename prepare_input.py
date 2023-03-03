@@ -16,7 +16,7 @@ MAX_SEQ_LENGTH = 20
 NUM_FEATURES = 2048
 random.seed(42)
 start_time = time.time()
-
+input_path="/Users/prochetasen/Desktop/"
 
 def delete_ds_file(path):
     target_file = path
@@ -145,7 +145,7 @@ def create_train_test_df(video_dir, label_pathway):
     name = ["video_name", "label"]
     train_df = pd.DataFrame(columns=name, data=train_list)
     #train_df = train_df.sample(frac=1, random_state=42)
-    csv_pathway = "/Users/prochetasen/Desktop/"
+    csv_pathway = input_path
     train_df.to_csv(csv_pathway + "train.csv",encoding='utf-8')
     test_df = pd.DataFrame(columns=name, data=test_list)
     test_df = test_df.sample(frac=1, random_state=42)
