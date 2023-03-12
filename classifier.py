@@ -6,18 +6,37 @@ import numpy as np
 import json
 from tensorflow import keras
 import time
-
+from keras import layers
 
 
 IMG_SIZE = 299
 BATCH_SIZE = 64
-EPOCHS = 5
+EPOCHS = 15
 MAX_SEQ_LENGTH = 20
 NUM_FEATURES = 2048
 random.seed(42)
 start_time = time.time()
 
-
+class Conv2Plus1D(keras.layers.Layer):
+  def __init__(self, filters, kernel_size, padding):
+    """
+      A sequence of convolutional layers that first apply the convolution operation over the
+      spatial dimensions, and then the temporal dimension. 
+    """
+    super().__init__()
+    self.seq = keras.Sequential([  
+        # Spatial decomposition
+        layers.Conv3D(filters=filters,
+                      kernel_size=(1, kernel_size[1], kernel_size[2]),
+                      padding=padding),
+        # Temporal decomposition
+        layers.Conv3D(filters=filters, 
+                      kernel_size=(kernel_size[0], 1, 1),
+                      padding=padding)
+        ])
+  
+  def call(self, x):
+    return self.seq(x)
 def delete_ds_file(path):
     target_file = path
     result = os.listdir(target_file)
@@ -102,7 +121,7 @@ def create_train_test_df(video_dir, label_pathway):
 
     train_set = train_data_ex + train_data_unex
     test_set = test_data_ex + test_data_unex
-    print(len(train_set))
+    #print(len(train_set))
     # print("NB of train_set is ", len(train_set))
     # print("NB of test_set is ", len(test_set))
 
@@ -134,7 +153,7 @@ def create_train_test_df(video_dir, label_pathway):
                     test_list.append([name1, "unexciting"])
     name = ["video_name", "label"]
     train_df = pd.DataFrame(columns=name, data=train_list)
-    
+    test_df = pd.DataFrame(columns=name, data=test_list) 
     return train_df, test_df
 
 
@@ -182,6 +201,8 @@ def prepare_data(df, basePath):
 
 
 train_data, train_labels = prepare_data(train_df, "/Users/prochetasen/Downloads/features/")
+#print(train_labels)
+
 test_data, test_labels = prepare_data(test_df, "/Users/prochetasen/Downloads/features/")
 
 #for i in range(2):
@@ -209,18 +230,19 @@ def get_sequence_model():
     frame_features_input = keras.Input((MAX_SEQ_LENGTH, NUM_FEATURES))
     mask_input = keras.Input((MAX_SEQ_LENGTH,), dtype="bool")
 
-    x = keras.layers.GRU(16, return_sequences=True)(
+    x = keras.layers.GRU(2000, return_sequences=True)(
         frame_features_input, mask=mask_input
     )
-    x = keras.layers.GRU(8)(x)
-    x = keras.layers.Dropout(0.4)(x)
-    x = keras.layers.Dense(8, activation="relu")(x)
+    x = Conv2Plus1D(filters=16, kernel_size=(3, 7, 7), padding='same')(x)
+    x = keras.layers.GRU(550)(x)
+    x = keras.layers.Dropout(.9)(x)
+    x = keras.layers.Dense(500, activation="softmax")(x)
     output = keras.layers.Dense(len(class_vocab), activation="softmax")(x)
 
     rnn_model = keras.Model([frame_features_input, mask_input], output)
 
     rnn_model.compile(
-        loss="sparse_categorical_crossentropy", optimizer="adam", metrics=["accuracy"]
+        loss="sparse_categorical_crossentropy", optimizer = keras.optimizers.Adam(learning_rate = 0.0001), metrics=["accuracy"]
     )
 
     return rnn_model

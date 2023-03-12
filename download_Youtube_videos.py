@@ -21,7 +21,7 @@ if __name__ == '__main__':
 
                 try:
                     # print(yt.)
-                    yt.streams.get_highest_resolution().download('/Users/lxy/Desktop/FYP/videos/new/', filename = yt.title+ '###' + line + '.mp4')
+                    yt.streams.get_highest_resolution().download('/Users/lxy/Desktop/FYP/videos/new/', filename = "_v_exciting_"+ line + '.mp4')
                     # video.download('/User/lxy/Documents/')
                     # print(data)
 
